@@ -12,7 +12,10 @@ public class GateMapper {
                 gate.getId(),
                 gate.getName(),
                 Optional.ofNullable(gate.getEntryCamera()).map(Camera::getId).orElse(null),
-                Optional.ofNullable(gate.getExitCamera()).map(Camera::getId).orElse(null)
+                Optional.ofNullable(gate.getExitCamera()).map(Camera::getId).orElse(null),
+                Optional.ofNullable(gate.getEntryCamera()).map(Camera::getIpAddress).orElse(null),
+                Optional.ofNullable(gate.getExitCamera()).map(Camera::getIpAddress).orElse(null)
+
         );
     }
 

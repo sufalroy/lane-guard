@@ -14,4 +14,6 @@ public class GateDTO {
     private String name;
     private Long entryCameraId;
     private Long exitCameraId;
+    private String entryCameraIpAddress;
+    private String exitCameraIpAddress;
 }

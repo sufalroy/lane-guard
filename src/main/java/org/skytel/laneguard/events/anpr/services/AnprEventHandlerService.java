@@ -78,7 +78,6 @@ public class AnprEventHandlerService {
         VehicleAccessLog savedLog = vehicleAccessLogRepository.save(newLog);
         monitoringService.startMonitoring(savedLog);
         String alertMessage = String.format("Vehicle %s entered through gate %s", licensePlate, gate.getName());
-        monitoringService.sendAlert(alertMessage);
         log.info(alertMessage);
     }
 
