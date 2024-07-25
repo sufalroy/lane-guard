@@ -41,7 +41,7 @@ public class CameraService {
     }
 
     public List<CameraDTO> getAllCameras() {
-        return cameraRepository.findAll().stream()
+        return cameraRepository.findAllByOrderByIdAsc().stream()
                 .map(cameraMapper::toDTO)
                 .collect(Collectors.toList());
     }

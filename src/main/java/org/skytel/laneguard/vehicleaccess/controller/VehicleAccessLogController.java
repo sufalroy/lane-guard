@@ -1,6 +1,7 @@
 package org.skytel.laneguard.vehicleaccess.controller;
 
 import org.skytel.laneguard.vehicleaccess.models.VehicleAccessLog;
+import org.skytel.laneguard.vehicleaccess.models.VehicleAccessLogDTO;
 import org.skytel.laneguard.vehicleaccess.services.VehicleAccessLogService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -9,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/logs")
@@ -31,7 +33,6 @@ public class VehicleAccessLogController {
             @RequestParam(required = false) String entryCameraIpAddress,
             @RequestParam(required = false) String exitCameraIpAddress,
             Pageable pageable) {
-
         Page<VehicleAccessLog> logs = vehicleAccessLogService.getVehicleAccessLogs(
                 licensePlate, startTime, endTime, status,
                 entryGateName, exitGateName,
@@ -45,5 +46,10 @@ public class VehicleAccessLogController {
         return vehicleAccessLogService.getVehicleAccessLog(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/active")
+    public ResponseEntity<List<VehicleAccessLogDTO>> getActiveVehicleAccessLogs() {
+        return ResponseEntity.ok(vehicleAccessLogService.getActiveVehicleAccessLogs());
     }
 }

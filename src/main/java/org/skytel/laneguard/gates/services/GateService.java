@@ -45,7 +45,7 @@ public class GateService {
     }
 
     public List<GateDTO> getAllGates() {
-        return gateRepository.findAll().stream()
+        return gateRepository.findAllByOrderByIdAsc().stream()
                 .map(gateMapper::toDTO)
                 .toList();
     }

@@ -1,7 +1,9 @@
 package org.skytel.laneguard.events.anpr.services;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.skytel.laneguard.alert.AlertConsumer;
+import org.skytel.laneguard.alert.AlertType;
 import org.skytel.laneguard.cameras.models.Camera;
 import org.skytel.laneguard.gates.models.Gate;
 import org.skytel.laneguard.vehicleaccess.models.VehicleAccessLog;
@@ -9,8 +11,7 @@ import org.skytel.laneguard.cameras.repositories.CameraRepository;
 import org.skytel.laneguard.gates.repositores.GateRepository;
 import org.skytel.laneguard.vehicleaccess.repositores.VehicleAccessLogRepository;
 import org.skytel.laneguard.events.anpr.requests.EventNotificationAlert;
-import org.skytel.laneguard.vehicleaccess.services.VehicleMonitoringService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.skytel.laneguard.vehicleaccess.services.VehicleAccessLogService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,22 +19,14 @@ import java.time.LocalDateTime;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class AnprEventHandlerService {
 
-    @Autowired
-    VehicleAccessLogRepository vehicleAccessLogRepository;
-
-    @Autowired
-    GateRepository gateRepository;
-
-    @Autowired
-    CameraRepository cameraRepository;
-
-    @Autowired
-    AlertConsumer alertConsumer;
-
-    @Autowired
-    private VehicleMonitoringService monitoringService;
+    private final AlertConsumer alertConsumer;
+    private final GateRepository gateRepository;
+    private final CameraRepository cameraRepository;
+    private final VehicleAccessLogService vehicleAccessLogService;
+    private final VehicleAccessLogRepository vehicleAccessLogRepository;
 
     @Transactional
     public void handleAnprEvent(EventNotificationAlert event) {
@@ -75,9 +68,10 @@ public class AnprEventHandlerService {
                 .entryCamera(camera)
                 .status(VehicleAccessLog.AccessStatus.IN_PROGRESS)
                 .build();
-        VehicleAccessLog savedLog = vehicleAccessLogRepository.save(newLog);
-        monitoringService.startMonitoring(savedLog);
+        vehicleAccessLogRepository.save(newLog);
+        vehicleAccessLogService.sendActiveVehicleAccessLogs();
         String alertMessage = String.format("Vehicle %s entered through gate %s", licensePlate, gate.getName());
+        vehicleAccessLogService.sendVehicleAccessAlert(alertMessage, AlertType.SUCCESS);
         log.info(alertMessage);
     }
 
@@ -88,7 +82,7 @@ public class AnprEventHandlerService {
                         accessLog -> completeOrLogAnomaly(accessLog, exitGate, exitCamera),
                         () -> {
                             String alertMessage = String.format("Vehicle %s attempting to exit without a recorded entry at gate %s", licensePlate, exitGate.getName());
-                            monitoringService.sendAlert(alertMessage);
+                            vehicleAccessLogService.sendVehicleAccessAlert(alertMessage, AlertType.FAILURE);
                             log.warn(alertMessage);
                         }
                 );
@@ -108,7 +102,7 @@ public class AnprEventHandlerService {
         String exitGateName = exitGate.getName();
 
         String alertMessage = String.format("Vehicle %s attempted to exit from gate %s instead of entry gate %s", licensePlate, exitGateName, entryGate);
-        monitoringService.sendAlert(alertMessage);
+        vehicleAccessLogService.sendVehicleAccessAlert(alertMessage, AlertType.FAILURE);
         log.warn(alertMessage);
         alertConsumer.triggerAlert();
     }
@@ -118,12 +112,11 @@ public class AnprEventHandlerService {
         accessLog.setExitGate(exitGate);
         accessLog.setExitCamera(exitCamera);
         accessLog.setExitTime(LocalDateTime.now());
-        VehicleAccessLog updatedLog = vehicleAccessLogRepository.save(accessLog);
-        monitoringService.updateMonitoring(updatedLog);
+        vehicleAccessLogRepository.save(accessLog);
         String alertMessage = String.format("Vehicle %s exited through gate %s", accessLog.getLicensePlate(), exitGate.getName());
-        monitoringService.sendAlert(alertMessage);
+        vehicleAccessLogService.sendVehicleAccessAlert(alertMessage, AlertType.SUCCESS);
         log.info(alertMessage);
-        monitoringService.stopMonitoring(updatedLog.getId());
+        vehicleAccessLogService.sendActiveVehicleAccessLogs();
     }
 
     private record CameraGatePair(Camera camera, Gate gate) {

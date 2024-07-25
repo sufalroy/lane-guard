@@ -12,4 +12,5 @@ public interface CameraRepository extends JpaRepository<Camera, Long> {
     Optional<Camera> findByMacAddress(String macAddress);
     Optional<Camera> findCameraByIdAndType(Long id, Camera.CameraType type);
     List<Camera> findByType(Camera.CameraType type);
+    List<Camera> findAllByOrderByIdAsc();
 }
